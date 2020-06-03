@@ -117,7 +117,7 @@ void BosonStarSolution::fix()
   	{
     		if (not borked)
     		{
-      			if (abs(p[i])> 2.0*p[0])
+      			if (fabs(p[i])> 2.0*p[0])
       			{
         				borked = true;
         				truncation = p[i];
@@ -163,7 +163,7 @@ int BosonStarSolution::find_midint()
   	// climb the hill if crossings != 0, this will exit loop immediately if there is no crossings
   	for (int i = mid_int+5; i < gridsize-1; ++i)
   	{
-    		if (abs(p[i+1]) < abs(p[i]))
+    		if (fabs(p[i+1]) < fabs(p[i]))
     		{
       			mid_int = i;
       			break;
@@ -172,7 +172,7 @@ int BosonStarSolution::find_midint()
 
   	for (int i = mid_int+5; i < gridsize-1; ++i)
   	{
-    		if (abs(p[i+1]) > abs(p[i]))
+    		if (fabs(p[i+1]) > fabs(p[i]))
     		{
       			mid_int = i;
       			//std::cout << "Truncation error: " << p[i]/PC << std::endl;
