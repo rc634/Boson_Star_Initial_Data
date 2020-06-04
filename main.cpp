@@ -17,5 +17,7 @@ int main()
 
 	a_boson_star.main();
 
+	a_boson_star.output_csv();
+
 	return 0;
 }
