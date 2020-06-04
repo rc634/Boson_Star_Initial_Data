@@ -22,7 +22,8 @@ void BosonStarSolution::main()
   	//std::cout << L << std::endl;
 
   	// finds the eigenvalue. WW is big then it descends to the correct w+ and w- then uses interval bisection to find best ww to machine precision
-  	WW = find_WW();
+  
+    WW = find_WW();
   	lower_ww = ww_min(WW);
   	upper_ww = ww_max(WW,lower_ww);
   	middle_ww = ww_IB(lower_ww,upper_ww);
@@ -31,16 +32,18 @@ void BosonStarSolution::main()
 
     // force the scalar field to zero after the turning point and reintegrate the lapse and shift
     force_flat(mid_int);
-    rk4_asymp(mid_int-1,false,ww);
+    rk4_asymp(mid_int,false,ww);
     initialise();
     rk4_asymp(mid_int, true, ww); // (true) uses large radius adaptive stepsize to get asymptotics (integrates vacuum metric out to huge radius ~ 10^10 to measure asymptotics).
     PSI_INF = psi[gridsize-1];
     OM_INF = omega[gridsize-1];
   
     
-    for (int q=0; q<5; q++)
+    for (int q=0; q<10; q++)
     {
-        PSC/=PSI_INF;
+
+        /*
+        //PSC/=PSI_INF;
         OMC/=OM_INF;
         ww/=OM_INF*OM_INF;
         initialise();
@@ -49,47 +52,46 @@ void BosonStarSolution::main()
         rk4_asymp(mid_int,true,ww);
         PSI_INF = psi[gridsize-1];
         OM_INF = omega[gridsize-1];
+        */
+        OMC/=OM_INF;
+        initialise();
+        WW = find_WW();
+        lower_ww = ww_min(WW);
+        upper_ww = ww_max(WW,lower_ww);
+        middle_ww = ww_IB(lower_ww,upper_ww);
+        mid_int = find_midint();
+        ww = middle_ww;
+
+        // force the scalar field to zero after the turning point and reintegrate the lapse and shift
+        force_flat(mid_int);
+        rk4_asymp(mid_int,false,ww);
+        initialise();
+        rk4_asymp(mid_int, true, ww); // (true) uses large radius adaptive stepsize to get asymptotics (integrates vacuum metric out to huge radius ~ 10^10 to measure asymptotics).
+        PSI_INF = psi[gridsize-1];
+        OM_INF = omega[gridsize-1];
     }
 
-    PSC/=PSI_INF;
+    //PSC/=PSI_INF;
     OMC/=OM_INF;
     ww/=OM_INF*OM_INF;
     initialise();
     rk4(ww);
     mid_int = find_midint();
-    rk4_asymp(mid_int,false,ww);//(mid_int-gridsize/200,false,ww);
+    rk4_asymp(mid_int,false,ww);//(mid_int-gridsize/200,false,ww);*/
 
     
-    /*dx/=PSI_INF; // change dx to make the rescaled physics scale correct
-
-    // just rescaled dx by the asymptotic value of the conformal factor and now re-integrate
-    rk4(ww);
-    mid_int = find_midint();
-    // force_flat(mid_int); // activate this for a hard star cutoff rather than smooth pseudo star integration
-    initialise();
-    rk4_asymp(mid_int-gridsize/200, false, ww); // (false) no large radius adaptive stepsize this time as we already know the asymptotics
-
-    //std::cout << "\33[30;41m" << " Origial Quantities: -> " << "\x1B[0m" << std::endl; // this mess of symbols just makes a nice red print statement, might be compiler dependant, can replace with normal std::cout stuff
-    //std::cout << "w: " << sqrt(ww)  << ", PSI_INF: " << PSI_INF << ", OM_INF: " << OM_INF << ", Outer radius: " << radius_array[gridsize-1] << std::endl;
-
-    // Now we rescale all appropriate variables by the large radius vlaues of conformal factor and lapse
-    for (int i = 0; i < gridsize; ++i)
-    {
-        radius_array[i] = double(i)*dx*PSI_INF;
-        psi[i] *= 1./PSI_INF;
-        dpsi[i] *= pow(PSI_INF,-2);
-        omega[i] *= 1./OM_INF;
-    }*/
+    std::cout << PSI_INF << ", " << OM_INF << std::endl;
+    std::cout << "Midint " << mid_int << std::endl;
 
     //calculate the ADM mass and aspect mass at the edge of physical domain. Aspect is more accurate but ADM should be relativiely similar.
-    adm_mass = -psi[gridsize-1]*dpsi[gridsize-1]*radius_array[gridsize-1]*radius_array[gridsize-1];
+    adm_mass = 0.;//
     aspect_mass = 2.*radius_array[gridsize-1]*(sqrt(psi[gridsize-1])-1.);
 
     //ww *= 1./(OM_INF*OM_INF); // rescale the original eigenvalue by the lapse at large radius
 
 
 
-    std::cout << "Finished producing Bosonstar with ADM mass : " << adm_mass << " and aspect mass : "  << aspect_mass << std::endl;    
+    std::cout << "Finished producing Bosonstar with ADM mass " << adm_mass << ", aspect mass "  << aspect_mass << " and w " << sqrt(ww) << std::endl;    
 
     //std::cout << "\33[30;41m" << " Renormalised Quantities: -> " << "\x1B[0m" << std::endl; // this mess of symbols just makes a nice red print statement, might be compiler dependant, can replace with normal std::cout stuff
     //std::cout << "w: " << sqrt(ww) << ", ADM M: " << adm_mass << ", Aspect M: " << aspect_mass << ", Outer radius: " << radius_array[gridsize-1] << std::endl;
@@ -104,7 +106,6 @@ void BosonStarSolution::initialise()
   	psi[0] = PSC;
   	// field gradients must be zero at zero radius for physical solutions
   	dp[0] = 0.;
-  	dpsi[0] = 0.;
     radius_array[0] = 0.;
 }
 
@@ -298,29 +299,25 @@ void BosonStarSolution::rk4(const double ww_)
                         x_ = (i-1)*dx+j*DX_; 
 
 
-      			k1 = DX_*P_RHS(x_,p[i-1],dp[i-1],psi[i-1],dpsi[i-1],omega[i-1],ww_);
-      			q1 = DX_*DP_RHS(x_,p[i-1],dp[i-1],psi[i-1],dpsi[i-1],omega[i-1],ww_);
-      			o1 = DX_*OMEGA_RHS(x_,p[i-1],dp[i-1],psi[i-1],dpsi[i-1],omega[i-1],ww_);
-      			s1 = DX_*PSI_RHS(x_,p[i-1],dp[i-1],psi[i-1],dpsi[i-1],omega[i-1],ww_);
-      			r1 = DX_*DPSI_RHS(x_,p[i-1],dp[i-1],psi[i-1],dpsi[i-1],omega[i-1],ww_);
+      			k1 = DX_*P_RHS(x_,p[i-1],dp[i-1],psi[i-1],omega[i-1],ww_);
+      			q1 = DX_*DP_RHS(x_,p[i-1],dp[i-1],psi[i-1],omega[i-1],ww_);
+      			o1 = DX_*OMEGA_RHS(x_,p[i-1],dp[i-1],psi[i-1],omega[i-1],ww_);
+      			s1 = DX_*PSI_RHS(x_,p[i-1],dp[i-1],psi[i-1],omega[i-1],ww_);
 
-      			k2 = DX_*P_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
-      			q2 = DX_*DP_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
-      	                o2 = DX_*OMEGA_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
-      			s2 = DX_*PSI_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
-      			r2 = DX_*DPSI_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
+      			k2 = DX_*P_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,omega[i-1] + o1/2.,ww_);
+      			q2 = DX_*DP_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,omega[i-1] + o1/2.,ww_);
+      	    o2 = DX_*OMEGA_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,omega[i-1] + o1/2.,ww_);
+      			s2 = DX_*PSI_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,omega[i-1] + o1/2.,ww_);
 
-      			k3 = DX_*P_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
-      			q3 = DX_*DP_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
-      	                o3 = DX_*OMEGA_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
-      			s3 = DX_*PSI_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
-      			r3 = DX_*DPSI_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
+      			k3 = DX_*P_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,omega[i-1] + o2/2.,ww_);
+      			q3 = DX_*DP_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,omega[i-1] + o2/2.,ww_);
+      	    o3 = DX_*OMEGA_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,omega[i-1] + o2/2.,ww_);
+      			s3 = DX_*PSI_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,omega[i-1] + o2/2.,ww_);
 
-      			k4 = DX_*P_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
-      			q4 = DX_*DP_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
-      	                o4 = DX_*OMEGA_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
-      			s4 = DX_*PSI_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
-      			r4 = DX_*DPSI_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
+      			k4 = DX_*P_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,omega[i-1] + o3,ww_);
+      			q4 = DX_*DP_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,omega[i-1] + o3,ww_);
+      	    o4 = DX_*OMEGA_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,omega[i-1] + o3,ww_);
+      			s4 = DX_*PSI_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,omega[i-1] + o3,ww_);
 
       			index = i-1;
       			if(j==jmax)
@@ -331,7 +328,6 @@ void BosonStarSolution::rk4(const double ww_)
       			p[index] = p[i-1] + (k1 + 2.*k2 + 2.*k3 + k4)/6.;
       			dp[index] = dp[i-1] + (q1 + 2.*q2 + 2.*q3 + q4)/6.;
       			psi[index] = psi[i-1] + (s1 + 2.*s2 + 2.*s3 + s4)/6.;
-      			dpsi[index] = dpsi[i-1] + (r1 + 2.*r2 + 2.*r3 + r4)/6.;
       			omega[index] = omega[i-1] + (o1 + 2.*o2 + 2.*o3 + o4)/6.;
     		}
   	radius_array[i] = dx*i;
@@ -369,34 +365,21 @@ void BosonStarSolution::rk4_asymp(const int iter, const bool adaptive, const dou
     		}
     		h = DX_/2.;
 
-    		//k1 = dx*small_P_RHS(x_,p[i-1],dp[i-1],psi[i-1],dpsi[i-1],omega[i-1],ww_);
-    		//q1 = dx*DP_RHS(x_,p[i-1],dp[i-1],psi[i-1],dpsi[i-1],omega[i-1],ww_);
-    		o1 = DX_*OMEGA_RHS(x_,p[i-1],dp[i-1],psi[i-1],dpsi[i-1],omega[i-1],ww_);
-    		s1 = DX_*PSI_RHS(x_,p[i-1],dp[i-1],psi[i-1],dpsi[i-1],omega[i-1],ww_);
-    		r1 = DX_*DPSI_RHS(x_,p[i-1],dp[i-1],psi[i-1],dpsi[i-1],omega[i-1],ww_);
+    		o1 = DX_*OMEGA_RHS(x_,p[i-1],dp[i-1],psi[i-1],omega[i-1],ww_);
+    		s1 = DX_*PSI_RHS(x_,p[i-1],dp[i-1],psi[i-1],omega[i-1],ww_);
 
-    		//k2 = dx*small_P_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
-    		//q2 = dx*DP_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
-                o2 = DX_*OMEGA_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
-    		s2 = DX_*PSI_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
-    		r2 = DX_*DPSI_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
+        o2 = DX_*OMEGA_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,omega[i-1] + o1/2.,ww_);
+    		s2 = DX_*PSI_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,omega[i-1] + o1/2.,ww_);
 
-    		//k3 = dx*small_P_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
-    		//q3 = dx*DP_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
-                o3 = DX_*OMEGA_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
-    		s3 = DX_*PSI_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
-    		r3 = DX_*DPSI_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
+        o3 = DX_*OMEGA_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,omega[i-1] + o2/2.,ww_);
+    		s3 = DX_*PSI_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,omega[i-1] + o2/2.,ww_);
 
-    		//k4 = dx*small_P_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
-    		//q4 = dx*DP_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
-                o4 = DX_*OMEGA_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
-    		s4 = DX_*PSI_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
-    		r4 = DX_*DPSI_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
+        o4 = DX_*OMEGA_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,omega[i-1] + o3,ww_);
+    		s4 = DX_*PSI_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,omega[i-1] + o3,ww_);
 
-    		p[i] = 0.;//p[i-1] + (k1 + 2.*k2 + 2.*k3 + k4)/6.;
-    		dp[i] = 0.;//dp[i-1] + (q1 + 2.*q2 + 2.*q3 + q4)/6.;
+    		p[i] = 0.;//p[i-1] + (k1 + 2.*k2 + 2.*k3 + k4)/6.;// 0.
+    		dp[i] = 0.;//dp[i-1] + (q1 + 2.*q2 + 2.*q3 + q4)/6.; // 0.
     		psi[i] = psi[i-1] + (s1 + 2.*s2 + 2.*s3 + s4)/6.;
-    		dpsi[i] = dpsi[i-1] + (r1 + 2.*r2 + 2.*r3 + r4)/6.;
     		omega[i] = omega[i-1] + (o1 + 2.*o2 + 2.*o3 + o4)/6.;
     		x_ += DX_;
                 if (!adaptive){radius_array[i]=i*dx;}
@@ -414,48 +397,40 @@ void BosonStarSolution::rk4_asymp(const int iter, const bool adaptive, const dou
 // these functions return the right hand side of the ode's
 // small_P_RHS is valid for large redius when the scalar field is small.
 
-double BosonStarSolution::small_P_RHS(const double x, const double P, const double DP, const double PSI, const double DPSI, const double OM, const double ww_)
+double BosonStarSolution::small_P_RHS(const double x, const double P, const double DP, const double PSI, const double OM, const double ww_)
 {
   	double RHS = -P*PSI*sqrt(DV(P)-ww_/(OM*OM));
   	return RHS;
 }
 
-double BosonStarSolution::P_RHS(const double x, const double P, const double DP, const double PSI, const double DPSI, const double OM, const double ww_)
+double BosonStarSolution::P_RHS(const double x, const double P, const double DP, const double PSI, const double OM, const double ww_)
 {
-  	double RHS = DP;
+  	double RHS = PSI*DP;
   	return RHS;
 }
 
-double BosonStarSolution::DP_RHS(const double x, const double P, const double DP, const double PSI, const double DPSI, const double OM, const double ww_)
+double BosonStarSolution::DP_RHS(const double x, const double P, const double DP, const double PSI, const double OM, const double ww_)
 {
-  	double DOM = OMEGA_RHS(x,P,DP,PSI,DPSI,OM,ww_), V = MM*P*P;
-  	double RHS = P*PSI*PSI*(DV(P) - ww_/(OM*OM)) - DP*(DOM/OM + DPSI/PSI);
-        if (x>10e-9)
+    double r = ((x==0.)?eps:x);
+  	double DOM = OMEGA_RHS(x,P,DP,PSI,OM,ww_);
+  	double RHS = P*PSI*(DV(P) - ww_/(OM*OM)) - DP*(DOM/OM + 2./r);
+        /*if (x>10e-9)
         {
                  RHS += -2.*DP/x;
-  	}
+  	}*/
         return RHS;
 }
 
-double BosonStarSolution::PSI_RHS(const double x, const double P, const double DP, const double PSI, const double DPSI, const double OM, const double ww_)
+double BosonStarSolution::PSI_RHS(const double x, const double P, const double DP, const double PSI, const double OM, const double ww_)
 {
-  	double RHS = DPSI;
-  	return RHS;
+    double r = ((x==0.)?eps:x);
+  	return -PSI*(PSI*PSI-1.)/(2.*r) + 2.*M_PI*G*x*pow(PSI,3)*(DP*DP + ww_*P*P/(OM*OM) + V(P));
 }
 
-double BosonStarSolution::DPSI_RHS(const double x, const double P, const double DP, const double PSI, const double DPSI, const double OM, const double ww_)
+double BosonStarSolution::OMEGA_RHS(const double x, const double P, const double DP, const double PSI, const double OM, const double ww_)
 {
-  	double RHS = DPSI*DPSI/(2.*PSI) - 2*M_PI*G*(V(P)*pow(PSI,3) + DP*DP*PSI + ww_*PSI*pow(P*PSI/OM,2));
-        if (x>10e-9)
-        {
-                RHS += - 2.*DPSI/x;
-        }
-  	return RHS;
-}
-
-double BosonStarSolution::OMEGA_RHS(const double x, const double P, const double DP, const double PSI, const double DPSI, const double OM, const double ww_)
-{
-  	return (4.*M_PI*G*x*pow(PSI*OM,2)*(DP*DP - PSI*PSI*V(P) + ww_*pow(P*PSI/OM,2)) - OM*OM*DPSI*(x*DPSI+2.*PSI) )/(2.*PSI*OM*(x*DPSI + PSI));
+    double r = ((x==0.)?eps:x);
+  	return OM*(PSI*PSI-1.)/(2.*r) + 2.*M_PI*G*x*PSI*PSI*OM*(DP*DP + ww_*P*P/(OM*OM) - V(P));
 }
 
 
@@ -574,15 +549,15 @@ double BosonStarSolution::get_dpsi_interp(const double r) const
     int iter = (int) floor(r/dx); // index of 2nd (out of 4) gridpoints used for interpolation
     double a = (r/dx)-floor(r/dx)-0.5; //fraction from midpoint of two values, a = +- 1/2 is the nearest gridpoints
     double interpolated_value = 0, f1, f2, f3, f4;
-    f1 = ((iter==0)?dpsi[1]:dpsi[iter-1]); // conditionl/ternary imposing zero gradeint at r=0
-    f2 = dpsi[iter];
-    f3 = dpsi[iter+1];
-    f4 = dpsi[iter+2];
+    f1 = ((iter==0)?psi[1]:psi[iter-1]); // conditionl/ternary imposing zero gradeint at r=0
+    f2 = psi[iter];
+    f3 = psi[iter+1];
+    f4 = psi[iter+2];
 
     if (iter>gridsize-3){std::cout << "FArrayBox domain exceeding star radius!" << std::endl;}
 
     // do the cubic spline, from mathematica script written by Robin (rc634@cam.ac.uk)
-    interpolated_value = (1./48.)*(f1 *(-3.+2.*a+12.*a*a-8.*a*a*a) +(3.+2.*a)*(-(1.+2.*a)*(-9.*f3+f4+6.*f3*a-2*f4*a)+3.*f2*(3.-8.*a+4.*a*a)));
+    interpolated_value = (1./(24.*dx))*( (f1-27.*f2+27.*f3-f4)  +  12.*a*(f1-f2-f3+f4)  -  12.*a*a*(f1-3.*f2+3.*f3-f4)  );
     return interpolated_value;
 }
 
@@ -626,7 +601,6 @@ void BosonStarSolution::set_initialcondition_params(BosonStarParams &m_params_Bo
     p.resize(gridsize); //scalar field modulus
     dp.resize(gridsize); //scalar field modulus gradient
     psi.resize(gridsize); //conformal factor
-    dpsi.resize(gridsize); //conformal factor gradient
     omega.resize(gridsize); // lapse
     radius_array.resize(gridsize); //radius
 
@@ -646,5 +620,28 @@ void BosonStarSolution::shout() const
     std::cout << "Haliboombah!" << std::endl;
 }
 
+
+void BosonStarSolution::output_csv()
+{
+    std::ofstream p_file, psi_file, omega_file, r_file;
+    p_file.open("p.csv");
+    psi_file.open("psi.csv");
+    omega_file.open("omega.csv");
+    r_file.open("r.csv");
+    
+
+    for (int i=0; i<gridsize; i++)
+    {
+        p_file << p[i] << "," << std::endl;
+        psi_file << psi[i] << "," << std::endl;
+        omega_file << omega[i] << "," << std::endl;
+        r_file << radius_array[i] << "," << std::endl;
+    }
+
+    p_file.close();
+    psi_file.close();
+    omega_file.close();
+    r_file.close();
+}
 
 #endif /* BOSONSTARSOLUTION_IMPL_HPP_ */
