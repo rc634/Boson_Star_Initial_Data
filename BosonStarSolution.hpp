@@ -68,6 +68,7 @@ public:
     double get_mass() const;
     double get_w() const;
     void shout() const;
+    void output_csv();
     void main();
 };
 
