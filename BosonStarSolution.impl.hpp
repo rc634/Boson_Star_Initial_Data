@@ -53,7 +53,7 @@ void BosonStarSolution::main()
         PSI_INF = psi[gridsize-1];
         OM_INF = omega[gridsize-1];
         */
-        OMC/=OM_INF;
+        OMC-=OM_INF;
         initialise();
         WW = find_WW();
         lower_ww = ww_min(WW);
@@ -72,7 +72,7 @@ void BosonStarSolution::main()
     }
 
     //PSC/=PSI_INF;
-    OMC/=OM_INF;
+    /*OMC/=OM_INF;
     ww/=OM_INF*OM_INF;
     initialise();
     rk4(ww);
@@ -413,24 +413,20 @@ double BosonStarSolution::DP_RHS(const double x, const double P, const double DP
 {
     double r = ((x==0.)?eps:x);
   	double DOM = OMEGA_RHS(x,P,DP,PSI,OM,ww_);
-  	double RHS = P*PSI*(DV(P) - ww_/(OM*OM)) - DP*(DOM/OM + 2./r);
-        /*if (x>10e-9)
-        {
-                 RHS += -2.*DP/x;
-  	}*/
-        return RHS;
+  	double RHS = P*PSI*(DV(P) - ww_*exp(-2.*OM)) - DP*(DOM + 2./r);
+    return RHS;
 }
 
 double BosonStarSolution::PSI_RHS(const double x, const double P, const double DP, const double PSI, const double OM, const double ww_)
 {
     double r = ((x==0.)?eps:x);
-  	return -PSI*(PSI*PSI-1.)/(2.*r) + 2.*M_PI*G*x*pow(PSI,3)*(DP*DP + ww_*P*P/(OM*OM) + V(P));
+  	return -PSI*(PSI*PSI-1.)/(2.*r) + 2.*M_PI*G*x*pow(PSI,3)*(DP*DP + ww_*P*P*exp(-2.*OM) + V(P));
 }
 
 double BosonStarSolution::OMEGA_RHS(const double x, const double P, const double DP, const double PSI, const double OM, const double ww_)
 {
     double r = ((x==0.)?eps:x);
-  	return OM*(PSI*PSI-1.)/(2.*r) + 2.*M_PI*G*x*PSI*PSI*OM*(DP*DP + ww_*P*P/(OM*OM) - V(P));
+  	return (PSI*PSI-1.)/(2.*r) + 2.*M_PI*G*x*PSI*PSI*(DP*DP + ww_*P*P*exp(-2.*OM) - V(P));
 }
 
 

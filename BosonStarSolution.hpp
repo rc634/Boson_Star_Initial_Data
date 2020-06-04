@@ -12,7 +12,7 @@ class BosonStarSolution
 private: // private member variables/arrays
     double MM, PC; //Klein Gordon mass squared, KG scalr field central amplitude
     const double G = 1;// 1./(M_PI*4.); // rescales KG field in ODE's
-    double PSC=1., OMC=0.5; // central density of scalar field (0.272 for kaup)  PSC and OMC are central values of conformal factor and lapse, not important as long as they are sensible (i.e. order 1)
+    double PSC=1., OMC=-1.; // central density of scalar field (0.272 for kaup)  PSC and OMC are central values of conformal factor and lapse, not important as long as they are sensible (i.e. order 1)
     double lambda; // phi 4 coupling in Klein gordon potential
     double sigma; // 0.2 works with PC = 0.05 // parameter for solitonic stars
     bool solitonic; // false fro mini/lambda star. true for solitonic star
