@@ -22,7 +22,7 @@ void BosonStarSolution::main()
   	//std::cout << L << std::endl;
 
   	// finds the eigenvalue. WW is big then it descends to the correct w+ and w- then uses interval bisection to find best ww to machine precision
-  
+
     WW = find_WW();
   	lower_ww = ww_min(WW);
   	upper_ww = ww_max(WW,lower_ww);
@@ -37,9 +37,9 @@ void BosonStarSolution::main()
     rk4_asymp(mid_int, true, ww); // (true) uses large radius adaptive stepsize to get asymptotics (integrates vacuum metric out to huge radius ~ 10^10 to measure asymptotics).
     PSI_INF = psi[gridsize-1];
     OM_INF = omega[gridsize-1];
-  
-    
-    for (int q=0; q<10; q++)
+
+
+    for (int q=0; q<5; q++)
     {
 
         /*
@@ -79,7 +79,7 @@ void BosonStarSolution::main()
     mid_int = find_midint();
     rk4_asymp(mid_int,false,ww);//(mid_int-gridsize/200,false,ww);*/
 
-    
+
     std::cout << PSI_INF << ", " << OM_INF << std::endl;
     std::cout << "Midint " << mid_int << std::endl;
 
@@ -91,7 +91,7 @@ void BosonStarSolution::main()
 
 
 
-    std::cout << "Finished producing Bosonstar with ADM mass " << adm_mass << ", aspect mass "  << aspect_mass << " and w " << sqrt(ww) << std::endl;    
+    std::cout << "Finished producing Bosonstar with ADM mass " << adm_mass << ", aspect mass "  << aspect_mass << " and w " << sqrt(ww) << std::endl;
 
     //std::cout << "\33[30;41m" << " Renormalised Quantities: -> " << "\x1B[0m" << std::endl; // this mess of symbols just makes a nice red print statement, might be compiler dependant, can replace with normal std::cout stuff
     //std::cout << "w: " << sqrt(ww) << ", ADM M: " << adm_mass << ", Aspect M: " << aspect_mass << ", Outer radius: " << radius_array[gridsize-1] << std::endl;
@@ -278,7 +278,7 @@ double BosonStarSolution::ww_IB(double lower_ww_, double upper_ww_)
 void BosonStarSolution::rk4(const double ww_)
 {
   	double k1, k2, k3, k4, q1, q2, q3, q4, x_=0., h = dx/2.;
-  	const double DX = dx; 
+  	const double DX = dx;
         double DX_ = DX;
   	double o1, o2, o3, o4, s1, s2, s3, s4, r1, r2, r3, r4;
   	int index, jmax=0;
@@ -296,7 +296,7 @@ void BosonStarSolution::rk4(const double ww_)
     		{
       			DX_ = DX/( (double)(1+jmax) );
       			h = DX_/2.;
-                        x_ = (i-1)*dx+j*DX_; 
+                        x_ = (i-1)*dx+j*DX_;
 
 
       			k1 = DX_*P_RHS(x_,p[i-1],dp[i-1],psi[i-1],omega[i-1],ww_);
@@ -384,15 +384,15 @@ void BosonStarSolution::rk4_asymp(const int iter, const bool adaptive, const dou
     		x_ += DX_;
                 if (!adaptive){radius_array[i]=i*dx;}
   	}
-  
+
   	if (adaptive and x_ < 8e7)
   	{
   	        std::cout << "\33[30;41m" << " Asymptotic Radius Too Small" << "\x1B[0m" << std::endl;
                 std::cout << x_ << std::endl;
   	}
 }
-  
-    
+
+
 
 // these functions return the right hand side of the ode's
 // small_P_RHS is valid for large redius when the scalar field is small.
@@ -569,7 +569,7 @@ double BosonStarSolution::get_dlapse_interp(const double r) const
     int iter = (int) floor(r/dx); // index of 2nd (out of 4) gridpoints used for interpolation
     double a = (r/dx)-floor(r/dx)-0.5; //fraction from midpoint of two values, a = +- 1/2 is the nearest gridpoints
     double interpolated_value = 0, f1, f2, f3, f4;
-    f1 = ((iter==0)?omega[1]:omega[iter-1]); 
+    f1 = ((iter==0)?omega[1]:omega[iter-1]);
     f2 = omega[iter];
     f3 = omega[iter+1];
     f4 = omega[iter+2];
@@ -628,7 +628,7 @@ void BosonStarSolution::output_csv()
     psi_file.open("psi.csv");
     omega_file.open("omega.csv");
     r_file.open("r.csv");
-    
+
 
     for (int i=0; i<gridsize; i++)
     {
