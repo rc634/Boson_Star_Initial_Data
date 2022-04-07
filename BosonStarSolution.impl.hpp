@@ -24,12 +24,22 @@ void BosonStarSolution::main()
   	//std::cout << L << std::endl;
 
   	// finds the eigenvalue. WW is big then it descends to the correct w+ and w- then uses interval bisection to find best ww to machine precision
-  	WW = find_WW();
+  	/*WW = find_WW();
   	lower_ww = ww_min(WW);
   	upper_ww = ww_max(WW,lower_ww);
-  	middle_ww = ww_IB(lower_ww,upper_ww);
+  	middle_ww = ww_IB_soliton(lower_ww,upper_ww);
   	mid_int = find_midint();
-  	ww = middle_ww;
+  	ww = middle_ww;*/
+
+    WW = find_WW_soliton();
+    ww = ww_IB_soliton(0,WW);
+    mid_int = find_midint();
+
+    //initialise();
+    //rk4(.445); //0.428438
+    //fix();
+
+    std::cout << mid_int << ", " << mid_int*dx << std::endl;
 
     // force the scalar field to zero after the turning point and reintegrate the lapse and shift
     force_flat(mid_int);
@@ -40,9 +50,30 @@ void BosonStarSolution::main()
     OM_INF = omega[gridsize-1];
 
 
-    for (int q=0; q<5; q++)
+    for (int q=0; q<2; q++)
     {
+
+
         PSC/=PSI_INF;
+        OMC/=OM_INF;
+        WW = find_WW_soliton();
+        ww = ww_IB_soliton(0,WW);
+        mid_int = find_midint();
+        fix();
+        force_flat(mid_int);
+        rk4_asymp(mid_int-1,false,ww);
+        //calculate the ADM mass and aspect mass at the edge of physical domain. Aspect is more accurate but ADM should be relativiely similar.
+        adm_mass = -psi[gridsize-1]*dpsi[gridsize-1]*radius_array[gridsize-1]*radius_array[gridsize-1];
+        aspect_mass = 2.*radius_array[gridsize-1]*(sqrt(psi[gridsize-1])-1.);
+        std::cout << "Central Density : " << p[0] << ", ADM mass : " << adm_mass << ", aspect mass : "  << aspect_mass << ", w : "  << sqrt(ww) << std::endl;
+        initialise();
+        rk4_asymp(mid_int, true, ww);
+        PSI_INF = psi[gridsize-1];
+        OM_INF = omega[gridsize-1];
+
+
+
+        /*PSC/=PSI_INF;
         OMC/=OM_INF;
         ww/=OM_INF*OM_INF;
         initialise();
@@ -50,48 +81,29 @@ void BosonStarSolution::main()
         mid_int = find_midint();
         rk4_asymp(mid_int,true,ww);
         PSI_INF = psi[gridsize-1];
-        OM_INF = omega[gridsize-1];
+        OM_INF = omega[gridsize-1];*/
     }
 
-    PSC/=PSI_INF;
-    OMC/=OM_INF;
-    ww/=OM_INF*OM_INF;
-    initialise();
-    rk4(ww);
-    mid_int = find_midint();
-    rk4_asymp(mid_int,false,ww);//(mid_int-gridsize/200,false,ww);
+    rk4_asymp(mid_int-1,false,ww);
+    //calculate the ADM mass and aspect mass at the edge of physical domain. Aspect is more accurate but ADM should be relativiely similar.
+    adm_mass = -psi[gridsize-1]*dpsi[gridsize-1]*radius_array[gridsize-1]*radius_array[gridsize-1];
+    aspect_mass = 2.*radius_array[gridsize-1]*(sqrt(psi[gridsize-1])-1.);
+    std::cout << "Central Density : " << p[0] << ", ADM mass : " << adm_mass << ", aspect mass : "  << aspect_mass << ", w : "  << sqrt(ww) << std::endl;
 
 
-    /*dx/=PSI_INF; // change dx to make the rescaled physics scale correct
-
-    // just rescaled dx by the asymptotic value of the conformal factor and now re-integrate
-    rk4(ww);
-    mid_int = find_midint();
-    // force_flat(mid_int); // activate this for a hard star cutoff rather than smooth pseudo star integration
-    initialise();
-    rk4_asymp(mid_int-gridsize/200, false, ww); // (false) no large radius adaptive stepsize this time as we already know the asymptotics
 
     //std::cout << "\33[30;41m" << " Origial Quantities: -> " << "\x1B[0m" << std::endl; // this mess of symbols just makes a nice red print statement, might be compiler dependant, can replace with normal std::cout stuff
     //std::cout << "w: " << sqrt(ww)  << ", PSI_INF: " << PSI_INF << ", OM_INF: " << OM_INF << ", Outer radius: " << radius_array[gridsize-1] << std::endl;
 
-    // Now we rescale all appropriate variables by the large radius vlaues of conformal factor and lapse
-    for (int i = 0; i < gridsize; ++i)
-    {
-        radius_array[i] = double(i)*dx*PSI_INF;
-        psi[i] *= 1./PSI_INF;
-        dpsi[i] *= pow(PSI_INF,-2);
-        omega[i] *= 1./OM_INF;
-    }*/
 
-    //calculate the ADM mass and aspect mass at the edge of physical domain. Aspect is more accurate but ADM should be relativiely similar.
-    adm_mass = -psi[gridsize-1]*dpsi[gridsize-1]*radius_array[gridsize-1]*radius_array[gridsize-1];
-    aspect_mass = 2.*radius_array[gridsize-1]*(sqrt(psi[gridsize-1])-1.);
+
+
 
     //ww *= 1./(OM_INF*OM_INF); // rescale the original eigenvalue by the lapse at large radius
 
 
 
-    std::cout << "Finished producing Bosonstar with ADM mass : " << adm_mass << " and aspect mass : "  << aspect_mass << std::endl;
+    //rk4(pow(0.38355,2));
 
     //std::cout << "\33[30;41m" << " Renormalised Quantities: -> " << "\x1B[0m" << std::endl; // this mess of symbols just makes a nice red print statement, might be compiler dependant, can replace with normal std::cout stuff
     //std::cout << "w: " << sqrt(ww) << ", ADM M: " << adm_mass << ", Aspect M: " << aspect_mass << ", Outer radius: " << radius_array[gridsize-1] << std::endl;
@@ -119,7 +131,7 @@ void BosonStarSolution::fix()
   	{
     		if (not borked)
     		{
-      			if (fabs(p[i])> 2.0*p[0])
+      			if (fabs(p[i])> 1.01*p[0])
       			{
         				borked = true;
         				truncation = p[i];
@@ -201,6 +213,21 @@ double BosonStarSolution::find_WW()
   	}
 }
 
+double BosonStarSolution::find_WW_soliton()
+{
+    bool crossed;
+  	double WW_ = 1.;
+  	while (true)
+  	{
+    		initialise();
+    		rk4(WW_);
+    		fix();
+    		crossed = soliton_eigen();
+    		if (crossed) return WW_;
+    		WW_*=2.;
+  	}
+}
+
 // calculates the lower limit for eigenvalue to be used in interval bisection
 double BosonStarSolution::ww_min(const double WW_)
 {
@@ -264,13 +291,53 @@ double BosonStarSolution::ww_IB(double lower_ww_, double upper_ww_)
     		{
     			   upper_ww_ = middle_ww_;
     		}
-    		else if (eigenstate <= EIGEN)
+    		else
     		{
     			   lower_ww_ = middle_ww_;
     		}
-    		if (iter > itermax){break;}
+    		if ((upper_ww_-lower_ww_)<ww_tolerance) return upper_ww_;
+        if (upper_ww_==lower_ww_) return upper_ww_;
+        if (iter>65) return upper_ww_;
   	}
-  	return middle_ww_;
+}
+
+
+double BosonStarSolution::ww_IB_soliton(double lower_ww_, double upper_ww_)
+{
+  int iter = 0, itermax, eigenstate, decimal_places_of_omega = 25.;
+  double middle_ww_;
+  bool crossed;
+
+  itermax = (int)((log(upper_ww_)+decimal_places_of_omega*log(10.))/log(2.)); //calculate number of bisections needed (simple pen and paper calculation)
+  while (true)
+  {
+      iter++;
+      middle_ww_ = 0.5*(upper_ww_+lower_ww_);
+      initialise();
+      rk4(middle_ww_);
+      fix();
+      crossed = soliton_eigen();
+      if (crossed)
+      {
+           upper_ww_ = middle_ww_;
+      }
+      else
+      {
+           lower_ww_ = middle_ww_;
+      }
+      if ((upper_ww_-lower_ww_)<ww_tolerance) return upper_ww_;
+      if (upper_ww_==lower_ww_) return upper_ww_;
+      if (iter>100) return upper_ww_;
+  }
+}
+
+double BosonStarSolution::soliton_eigen()
+{
+    for (int i=1; i<gridsize; i++)
+    {
+        if (p[i]*p[i+1]<0.) return true;
+        if (p[i]>p[i-1]) return false;
+    }
 }
 
 
@@ -430,13 +497,9 @@ double BosonStarSolution::P_RHS(const double x, const double P, const double DP,
 
 double BosonStarSolution::DP_RHS(const double x, const double P, const double DP, const double PSI, const double DPSI, const double OM, const double ww_)
 {
-  	double DOM = OMEGA_RHS(x,P,DP,PSI,DPSI,OM,ww_), V = MM*P*P;
-  	double RHS = P*PSI*PSI*(DV(P) - ww_/(OM*OM)) - DP*(DOM/OM + DPSI/PSI);
-        if (x>10e-9)
-        {
-                 RHS += -2.*DP/x;
-  	}
-        return RHS;
+    double r = ((x==0.)?eps:x);
+  	double DOM = OMEGA_RHS(x,P,DP,PSI,DPSI,OM,ww_);
+  	return P*PSI*PSI*(DV(P) - ww_/(OM*OM)) - DP*(DOM/OM + DPSI/PSI + 2./r);
 }
 
 double BosonStarSolution::PSI_RHS(const double x, const double P, const double DP, const double PSI, const double DPSI, const double OM, const double ww_)
@@ -447,17 +510,14 @@ double BosonStarSolution::PSI_RHS(const double x, const double P, const double D
 
 double BosonStarSolution::DPSI_RHS(const double x, const double P, const double DP, const double PSI, const double DPSI, const double OM, const double ww_)
 {
-  	double RHS = DPSI*DPSI/(2.*PSI) - 2*M_PI*G*(V(P)*pow(PSI,3) + DP*DP*PSI + ww_*PSI*pow(P*PSI/OM,2));
-        if (x>10e-9)
-        {
-                RHS += - 2.*DPSI/x;
-        }
-  	return RHS;
+    double r = ((x==0.)?eps:x);
+    return 0.5*DPSI*DPSI/PSI - 2.*DPSI/r - 2.*M_PI*G*PSI*( PSI*PSI*V(P) + DP*DP + ww_*P*P*PSI*PSI/(OM*OM) );
 }
 
 double BosonStarSolution::OMEGA_RHS(const double x, const double P, const double DP, const double PSI, const double DPSI, const double OM, const double ww_)
 {
-  	return (4.*M_PI*G*x*pow(PSI*OM,2)*(DP*DP - PSI*PSI*V(P) + ww_*pow(P*PSI/OM,2)) - OM*OM*DPSI*(x*DPSI+2.*PSI) )/(2.*PSI*OM*(x*DPSI + PSI));
+    double r = ((x==0.)?eps:x);
+  	return (OM/(x*DPSI + PSI))*(    2.*M_PI*G*x*PSI*(DP*DP - PSI*PSI*V(P) + ww_*P*P*PSI*PSI/(OM*OM) ) - DPSI - 0.5*x*DPSI*DPSI/PSI );
 }
 
 
@@ -618,6 +678,19 @@ double BosonStarSolution::get_mass() const
 double BosonStarSolution::get_w() const
 {
     return sqrt(ww);
+}
+
+double BosonStarSolution::get_r(const double frac) const
+{
+    if ( (frac-0.5)*(frac-0.5) >= 0.25) {return -1.;}
+
+    for (int i = 0; i < gridsize; ++i)
+    {
+        if (p[i]/p[0] < frac)
+        {
+            return radius_array[i];
+        }
+    }
 }
 
 

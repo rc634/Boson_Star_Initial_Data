@@ -24,6 +24,8 @@ private: // private member variables/arrays
   	int mid_int; // integer where growing mode becomes relevant
   	double upper_ww, lower_ww, middle_ww;
   	double adm_mass, aspect_mass;
+    double eps = 10e-20;
+    double ww_tolerance = 10e-20;
 
 
     std::vector<double> p; //scalar field modulus
@@ -50,7 +52,10 @@ private: // private member fucntions functions
     double ww_min(const double WW_);
     double ww_max(const double WW_, const double lower_ww_);
     double ww_IB(double lower_ww_, double upper_ww_);
+    double ww_IB_soliton(double lower_ww_, double upper_ww_);
+    double soliton_eigen();
     double find_WW();
+    double find_WW_soliton();
     int find_midint();
     double V(const double P);
     double DV(const double P);
@@ -67,6 +72,7 @@ public:
     double get_dlapse_interp(const double r) const;
     double get_mass() const;
     double get_w() const;
+    double get_r(const double frac) const;
     void shout() const;
     void output_csv();
     void main();
