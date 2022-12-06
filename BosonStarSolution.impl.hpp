@@ -40,6 +40,7 @@ void BosonStarSolution::main()
     //fix();
 
     std::cout << mid_int << ", " << mid_int*dx << std::endl;
+    std::cout << "total length : " << L << std::endl;
 
     // force the scalar field to zero after the turning point and reintegrate the lapse and shift
     force_flat(mid_int);
@@ -224,6 +225,10 @@ double BosonStarSolution::find_WW_soliton()
     		fix();
     		crossed = soliton_eigen();
     		if (crossed) return WW_;
+        if (WW_>10e10)
+        {
+            return WW_;
+        }
     		WW_*=2.;
   	}
 }
@@ -331,13 +336,27 @@ double BosonStarSolution::ww_IB_soliton(double lower_ww_, double upper_ww_)
   }
 }
 
-double BosonStarSolution::soliton_eigen()
+/*double BosonStarSolution::soliton_eigen()
 {
     for (int i=1; i<gridsize; i++)
     {
         if (p[i]*p[i+1]<0.) return true;
         if (p[i]>p[i-1]) return false;
     }
+}*/
+
+bool BosonStarSolution::soliton_eigen()
+{
+    for (int i = 2; i < gridsize-6; i++)
+    {
+        if (p[i] * p[i + 1] < 0.)
+            return true;
+        if (p[i-2] * p[i + 2] < 0.)
+            return true;
+        if (p[i] > p[i - 1])
+            return false;
+    }
+    return false;
 }
 
 
@@ -413,12 +432,13 @@ void BosonStarSolution::rk4(const double ww_)
 // bool adaaptive is true if stepsize is supposed to be adaptive aat large radius and false for constant stepsize
 void BosonStarSolution::rk4_asymp(const int iter, const bool adaptive, const double ww_)
 {
-    double k1, k2, k3, k4, q1, q2, q3, q4, x_=iter*dx, h, delta = (double)gridsize;
-    const double DX = dx;
-    double DX_= DX;
-    double o1, o2, o3, o4, s1, s2, s3, s4, r1, r2, r3, r4;
-    double N_ = gridsize-iter, L_ = pow(9.,9);
-    int i_;
+  double k1=0., k2=0., k3=0., k4=0., q1=0., q2=0., q3=0., q4=0., x_ = iter * dx, h,
+                                         delta = (double)gridsize;
+  const double DX = dx;
+  double DX_ = DX;
+  double o1, o2, o3, o4, s1, s2, s3, s4, r1, r2, r3, r4;
+  double N_ = gridsize - iter, L_ = pow(9., 9);
+  int i_;
 
     double k_ = log(L_)/N_;
 
@@ -446,19 +466,19 @@ void BosonStarSolution::rk4_asymp(const int iter, const bool adaptive, const dou
 
     		//k2 = dx*small_P_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
     		//q2 = dx*DP_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
-                o2 = DX_*OMEGA_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
+        o2 = DX_*OMEGA_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
     		s2 = DX_*PSI_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
     		r2 = DX_*DPSI_RHS(x_ + h,p[i-1] + k1/2.,dp[i-1] + q1/2.,psi[i-1] + s1/2.,dpsi[i-1] + r1/2.,omega[i-1] + o1/2.,ww_);
 
     		//k3 = dx*small_P_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
     		//q3 = dx*DP_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
-                o3 = DX_*OMEGA_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
+        o3 = DX_*OMEGA_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
     		s3 = DX_*PSI_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
     		r3 = DX_*DPSI_RHS(x_ + h,p[i-1] + k2/2.,dp[i-1] + q2/2.,psi[i-1] + s2/2.,dpsi[i-1] + r2/2.,omega[i-1] + o2/2.,ww_);
 
     		//k4 = dx*small_P_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
     		//q4 = dx*DP_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
-                o4 = DX_*OMEGA_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
+        o4 = DX_*OMEGA_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
     		s4 = DX_*PSI_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
     		r4 = DX_*DPSI_RHS(x_ + 2.*h,p[i-1] + k3,dp[i-1] + q3,psi[i-1] + s3,dpsi[i-1] + r3,omega[i-1] + o3,ww_);
 

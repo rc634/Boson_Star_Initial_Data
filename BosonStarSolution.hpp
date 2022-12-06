@@ -53,7 +53,7 @@ private: // private member fucntions functions
     double ww_max(const double WW_, const double lower_ww_);
     double ww_IB(double lower_ww_, double upper_ww_);
     double ww_IB_soliton(double lower_ww_, double upper_ww_);
-    double soliton_eigen();
+    bool soliton_eigen(); // double soliton_eigen();
     double find_WW();
     double find_WW_soliton();
     int find_midint();

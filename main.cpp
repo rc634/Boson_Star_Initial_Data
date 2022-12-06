@@ -7,7 +7,7 @@
 
 int main()
 {
-	double r_max = 1024.;
+	double r_max = 256.;
 
 	BosonStarParams a_BosonStarParams;
 
@@ -33,7 +33,7 @@ int main()
 		a_boson_star.main();
 		time_new = time(NULL);
 		std::cout << "Computation time : " << time_new - time_prev << " seconds" << std::endl << std::endl;
-		//a_boson_star.output_csv();
+		a_boson_star.output_csv();
 		m = a_boson_star.get_mass();
 		r = a_boson_star.get_r(0.01);
 		mass_phi_file << a_BosonStarParams.central_amplitude_CSF << ", " << m << ", " << std::endl;
